@@ -1,0 +1,17 @@
+{
+  "name": "Orange/Database",
+  "description": "This library implements object model of SQL queries and ActiveRecord (ORM) pattern.",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Mikhail Kelner",
+      "email": "mikhail.kelner@gmail.com"
+    }
+  ]
+}
