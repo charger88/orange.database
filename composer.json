@@ -1,5 +1,5 @@
 {
-  "name": "Orange/Database",
+  "name": "charger88/orange.database",
   "description": "This library implements object model of SQL queries and ActiveRecord (ORM) pattern.",
   "minimum-stability": "stable",
   "license": "MIT",
