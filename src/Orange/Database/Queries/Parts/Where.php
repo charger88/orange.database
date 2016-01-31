@@ -9,16 +9,40 @@ trait Where
 
     /**
      * @param $condition
-     * @param integer $logic [Condition::L_OR]
+     * @param integer $operator [Condition::L_OR]
      * @return \Orange\Database\Queries\Query
      */
-    public function addWhere($condition, $logic = Condition::L_OR)
+    public function addWhere($condition, $operator = Condition::L_OR)
     {
         if ($condition instanceof Condition) {
             $condition->setConnection($this->getConnection());
         }
-        $this->where .= $this->where ? ' ' . ($logic == Condition::L_AND ? 'AND' : 'OR') . ' ' : ' WHERE ';
+        if ($this->where){
+            if (substr($this->where,strlen($this->where) - 2) != '(') {
+                $this->where .= ($operator == Condition::L_AND ? ' AND ' : ' OR ');
+            }
+        } else {
+            $this->where .= ' WHERE ';
+        }
         $this->where .= $condition;
+        return $this;
+    }
+
+    /**
+     * @param boolean $open
+     * @return \Orange\Database\Queries\Query
+     */
+    public function addWhereBracket($open = true){
+        $this->where .= $open ? ' (' : ') ';
+        return $this;
+    }
+
+    /**
+     * @param integer $operator
+     * @return \Orange\Database\Queries\Query
+     */
+    public function addWhereOperator($operator){
+        $this->where .= $operator == Condition::L_AND ? ' AND ' : ' OR ';
         return $this;
     }
 

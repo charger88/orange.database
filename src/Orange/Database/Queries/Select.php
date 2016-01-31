@@ -161,8 +161,32 @@ class Select extends Query
         if ($condition instanceof Parts\Condition) {
             $condition->setConnection($this->connection);
         }
-        $this->having .= $this->having ? ' ' . ($logic == Parts\Condition::L_AND ? 'AND' : 'OR') . ' ' : ' HAVING ';
+        if ($this->having){
+            if (substr($this->having,strlen($this->having) - 2) != '(') {
+                $this->having .= ($operator == Parts\Condition::L_AND ? ' AND ' : ' OR ');
+            }
+        } else {
+            $this->where .= ' HAVING ';
+        }
         $this->having .= $condition;
+        return $this;
+    }
+
+    /**
+     * @param boolean $open
+     * @return \Orange\Database\Queries\Query
+     */
+    public function addHavingBracket($open = true){
+        $this->having .= $open ? ' (' : ') ';
+        return $this;
+    }
+
+    /**
+     * @param integer $operator
+     * @return \Orange\Database\Queries\Query
+     */
+    public function addHavingOperator($operator){
+        $this->having .= $operator == Parts\Condition::L_AND ? ' AND ' : ' OR ';
         return $this;
     }
 
@@ -234,6 +258,44 @@ class Select extends Query
     }
 
     /**
+     * @param string $key_column
+     * @param string $value_column
+     * @return array
+     * @throws DBException
+     */
+    public function getResultColumn($key_column,$value_column)
+    {
+        $result = [];
+        while ($row = $this->getResultNextRow()) {
+            if (!array_key_exists($key_column, $row)) {
+                throw new \Orange\Database\DBException('Key field is not exists');
+            }
+            if (!array_key_exists($value_column, $row)) {
+                throw new \Orange\Database\DBException('Value field is not exists');
+            }
+            $result[$row[$key_column]] = $row[$value_column];
+        }
+        return $result;
+    }
+
+    /**
+     * @param string $value_column
+     * @return array
+     * @throws DBException
+     */
+    public function getResultList($value_column)
+    {
+        $result = [];
+        while ($row = $this->getResultNextRow()) {
+            if (!array_key_exists($value_column, $row)) {
+                throw new \Orange\Database\DBException('Value field is not exists');
+            }
+            $result[] = $row[$value_column];
+        }
+        return $result;
+    }
+
+    /**
      * @param bool|false $indexed
      * @return mixed
      * @throws DBException
@@ -246,6 +308,28 @@ class Select extends Query
         return $indexed
             ? $this->connection->driver->fetchRow($this->result)
             : $this->connection->driver->fetchAssoc($this->result);
+    }
+
+    /**
+     * @return integer
+     * @throws DBException
+     */
+    public function getResultNumRow()
+    {
+        if (is_null($this->result)) {
+            throw new \Orange\Database\DBException('Query was not executed');
+        }
+        return $this->connection->driver->getSelectedRows($this->result);
+    }
+
+    /**
+     * @return mixed
+     * @throws DBException
+     */
+    public function getResultValue()
+    {
+        $res = $this->getResultNextRow();
+        return $res ? array_shift($res) : null;
     }
 
 }

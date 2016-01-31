@@ -188,6 +188,14 @@ abstract class ActiveRecord
     }
 
     /**
+     * @return array
+     */
+    public function getData()
+    {
+        return $this->values;
+    }
+
+    /**
      * @throws DBException
      */
     public static function install()
@@ -229,6 +237,8 @@ abstract class ActiveRecord
             $value = '|' . implode('|', $value) . '|';
         } else if ($type == 'BOOLEAN') {
             $value = $value ? 1 : 0;
+        } else if ($type == 'TIME') {
+            $value = date("Y-m-d H:i:s", is_numeric($value) ? $value : strtotime($value));
         }
         return !is_null($length) && (strlen($value) > $length) ? substr($value, 0, $length) : $value;
     }
@@ -249,6 +259,14 @@ abstract class ActiveRecord
             $value = intval($value) ? true : false;
         }
         return $value;
+    }
+
+    /**
+     * @return string
+     */
+    public static function getTableName()
+    {
+        return static::$table;
     }
 
 }

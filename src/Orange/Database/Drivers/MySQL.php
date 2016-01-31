@@ -226,6 +226,11 @@ class MySQL implements Driver
         return $this->mysqli->affected_rows;
     }
 
+    public function getSelectedRows($result)
+    {
+        return $result->num_rows;;
+    }
+
     public function __destruct()
     {
         $this->closeConnection();

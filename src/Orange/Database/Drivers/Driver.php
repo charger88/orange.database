@@ -35,4 +35,6 @@ interface Driver
 
     public function getAffectedRows();
 
+    public function getSelectedRows($result);
+
 }
