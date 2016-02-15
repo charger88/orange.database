@@ -21,6 +21,11 @@ class Connection
     public $driver;
 
     /**
+     * @var string
+     */
+    public $logfile = '';
+
+    /**
      * @param $config
      * @param string $name
      * @throws DBException

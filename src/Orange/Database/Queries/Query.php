@@ -49,6 +49,9 @@ abstract class Query
             $this->connection->driver->connect();
         }
         $sql = $this->build();
+        if ($this->connection->logfile){
+            file_put_contents($this->connection->logfile,$sql."\n---\n",FILE_APPEND);
+        }
         if (is_array($sql)) {
             $this->result = $this->connection->driver->query(array_shift($sql));
             foreach ($sql as $s) {

@@ -54,6 +54,7 @@ abstract class ActiveRecord
             throw new DBException('Table is not defined for class ' . get_class($this));
         }
         if (!static::$scheme) {
+            var_dump(static::$scheme);
             throw new DBException('Scheme is not defined for class ' . get_class($this));
         }
         foreach (static::$scheme as $field => $params) {
@@ -182,6 +183,7 @@ abstract class ActiveRecord
     public function get($field)
     {
         if (!array_key_exists($field, $this->values)) {
+            var_dump($this);
             throw new DBException('ActiveRecord exception: field "' . $field . '" is not exists in class ' . get_class($this) . ' (table - ' . static::$table . ')');
         }
         return $this->values[$field];
@@ -205,7 +207,7 @@ abstract class ActiveRecord
         foreach (static::$scheme as $field => $info) {
             $length = isset($info['length']) ? $info['length'] : null;
             if (!isset($info['type'])) {
-                throw new DBException('Field type is not defined.');
+                throw new DBException('Type of field '.static::$table.'.'.$field.' is not defined.');
             }
             $create->addField($field, $info['type'], $length, isset($info['default']) ? $info['default'] : null, isset($info['null']) ? true : false);
         }
@@ -235,10 +237,14 @@ abstract class ActiveRecord
             $value = json_encode($value);
         } else if ($type == 'LIST') {
             $value = '|' . implode('|', $value) . '|';
+        } else if ($type == 'DATA') {
+            $value = serialize($value);
         } else if ($type == 'BOOLEAN') {
             $value = $value ? 1 : 0;
         } else if ($type == 'TIME') {
             $value = date("Y-m-d H:i:s", is_numeric($value) ? $value : strtotime($value));
+        } else if ($type == 'DATE') {
+            $value = date("Y-m-d", is_numeric($value) ? $value : strtotime($value));
         }
         return !is_null($length) && (strlen($value) > $length) ? substr($value, 0, $length) : $value;
     }
@@ -255,8 +261,43 @@ abstract class ActiveRecord
             $value = json_decode($value, true);
         } else if ($type == 'LIST') {
             $value = trim(explode('|', $value), '|');
+        } else if ($type == 'DATA') {
+            $value = unserialize($value);
         } else if ($type == 'BOOLEAN') {
             $value = intval($value) ? true : false;
+        }
+        return $value;
+    }
+
+    /**
+     * @param $key
+     * @return mixed
+     */
+    private function getDefaultAppValue($key)
+    {
+        if (isset(static::$scheme[$key]['default'])){
+            return static::$scheme[$key]['default'];
+        } else {
+            $type = static::$scheme[$key]['type'];
+            if (($type == 'ARRAY') || ($type == 'LIST')) {
+                $value = array();
+            } else if ($type == 'DATA') {
+                $value = null;
+            } else if ($type == 'BOOLEAN') {
+                $value = false;
+            } else if ($type == 'TIME') {
+                $value = '0000-00-00 00:00:00'; //TODO Add something about now()
+            } else  if ($type == 'DATE') {
+                $value = '0000-00-00'; //TODO Add something about now()
+            } else if (($type == 'STRING') || ($type == 'CHAR') || ($type == 'TEXT') || ($type == 'LONGTEXT')) {
+                $value = '';
+            } else if (($type == 'TINYINT') || ($type == 'SMALLINT') || ($type == 'INTEGER') || ($type == 'BIGINT')) {
+                $value = 0;
+            } else if ($type == 'FLOAT'){
+                $value = 0.0;
+            } else {
+                $value = null;
+            }
         }
         return $value;
     }

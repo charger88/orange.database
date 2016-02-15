@@ -174,6 +174,8 @@ class MySQL implements Driver
             $type = 'BIGINT';
         } else if ($type == 'INTEGER') {
             $type = 'INT';
+        } else if ($type == 'SMALLINT') {
+            $type = 'SMALLINT';
         } else if ($type == 'TINYINT') {
             $type = 'TINYINT';
         } else if ($type == 'BOOLEAN') {
