@@ -54,14 +54,15 @@ abstract class ActiveRecord
             throw new DBException('Table is not defined for class ' . get_class($this));
         }
         if (!static::$scheme) {
-            var_dump(static::$scheme);
             throw new DBException('Scheme is not defined for class ' . get_class($this));
         }
         foreach (static::$scheme as $field => $params) {
-            $this->values[$field] = isset($params['default']) ? $params['default'] : null;
+            $this->values[$field] = isset($params['default']) ? $params['default'] : $this->getDefaultAppValue($field);
         }
         if (is_null($key) && is_array($value)) {
             $this->setData($value);
+        } else if (is_array($key) && is_null($value)) {
+            $this->setData($key,true);
         } else if (is_int($key) && is_null($value)) {
             $this->setData((new Select(static::$table))
                 ->addWhere(new Condition('id', '=', $key))
@@ -101,16 +102,16 @@ abstract class ActiveRecord
     {
         $values = [];
         foreach ($this->values as $key => $value) {
-            $values[$key] = $this->convertToDBFormat($key, $value);
+            $values[$key] = self::convertToDBFormat($key, $value);
         }
         if ($this->id) {
             (new Update(static::$table))
-                ->setDataSet($this->values)
+                ->setDataSet($values)
                 ->addWhere(new Condition('id', '=', $this->id))
                 ->execute();
         } else {
             $this->id = $this->values['id'] = (new Insert(static::$table))
-                ->setDataSet($this->values)
+                ->setDataSet($values)
                 ->execute()
                 ->getLastID();
         }
@@ -167,7 +168,7 @@ abstract class ActiveRecord
             if ($data) {
                 foreach ($this->values as $field => $value) {
                     if (array_key_exists($field, $data)) {
-                        $this->set($field, $raw_data ? $this->convertToAppFormat($field, $data[$field]) : $raw_data);
+                        $this->set($field, $raw_data ? $this->convertToAppFormat($field, $data[$field]) : $data[$field]);
                     }
                 }
             }
@@ -183,7 +184,6 @@ abstract class ActiveRecord
     public function get($field)
     {
         if (!array_key_exists($field, $this->values)) {
-            var_dump($this);
             throw new DBException('ActiveRecord exception: field "' . $field . '" is not exists in class ' . get_class($this) . ' (table - ' . static::$table . ')');
         }
         return $this->values[$field];
@@ -229,14 +229,18 @@ abstract class ActiveRecord
      * @param $value
      * @return int|string
      */
-    private function convertToDBFormat($key, $value)
+    protected static function convertToDBFormat($key, $value, $type = null, $length = null)
     {
-        $type = static::$scheme[$key]['type'];
-        $length = isset(static::$scheme[$key]['length']) ? static::$scheme[$key]['length'] : null;
+        if (is_null($type)) {
+            $type = static::$scheme[$key]['type'];
+        }
+        if (is_null($length)){
+            $length = isset(static::$scheme[$key]['length']) ? static::$scheme[$key]['length'] : null;
+        }
         if ($type == 'ARRAY') {
             $value = json_encode($value);
         } else if ($type == 'LIST') {
-            $value = '|' . implode('|', $value) . '|';
+            $value = '|' . implode('|', $value ? $value : array()) . '|';
         } else if ($type == 'DATA') {
             $value = serialize($value);
         } else if ($type == 'BOOLEAN') {
@@ -254,17 +258,19 @@ abstract class ActiveRecord
      * @param $value
      * @return bool|mixed|string
      */
-    private static function convertToAppFormat($key, $value)
+    protected static function convertToAppFormat($key, $value)
     {
         $type = static::$scheme[$key]['type'];
         if ($type == 'ARRAY') {
             $value = json_decode($value, true);
         } else if ($type == 'LIST') {
-            $value = trim(explode('|', $value), '|');
+            $value = explode('|', trim($value, '|'));
         } else if ($type == 'DATA') {
             $value = unserialize($value);
         } else if ($type == 'BOOLEAN') {
             $value = intval($value) ? true : false;
+        } else if (($type == 'BIGINT') || ($type == 'INTEGER') || ($type == 'TINYINT') || ($type == 'SMALLINT')) {
+            $value = intval($value);
         }
         return $value;
     }
@@ -273,7 +279,7 @@ abstract class ActiveRecord
      * @param $key
      * @return mixed
      */
-    private function getDefaultAppValue($key)
+    protected function getDefaultAppValue($key)
     {
         if (isset(static::$scheme[$key]['default'])){
             return static::$scheme[$key]['default'];

@@ -43,7 +43,7 @@ class Condition
         return $this->connection;
     }
 
-    public function __toString()
+    public function getSQL()
     {
         return $this->formatField($this->field) . ' ' . $this->operator . ' ' . ($this->link ? $this->formatField($this->value) : $this->formatValue($this->value));
     }

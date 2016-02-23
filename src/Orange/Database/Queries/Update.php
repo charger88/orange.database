@@ -17,10 +17,6 @@ class Update extends Query
      * @var
      */
     protected $fields;
-    /**
-     * @var
-     */
-    protected $where;
 
     /**
      * @return string

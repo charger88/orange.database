@@ -12,19 +12,19 @@ trait Where
      * @param integer $operator [Condition::L_OR]
      * @return \Orange\Database\Queries\Query
      */
-    public function addWhere($condition, $operator = Condition::L_OR)
+    public function addWhere($condition, $operator = Condition::L_AND)
     {
         if ($condition instanceof Condition) {
             $condition->setConnection($this->getConnection());
         }
-        if ($this->where){
-            if (substr($this->where,strlen($this->where) - 2) != '(') {
+        if (empty($this->where)){
+            $this->where .= ' WHERE ';
+        } else {
+            if (substr(trim($this->where),strlen(trim($this->where)) - 1, 1) != '(') {
                 $this->where .= ($operator == Condition::L_AND ? ' AND ' : ' OR ');
             }
-        } else {
-            $this->where .= ' WHERE ';
         }
-        $this->where .= $condition;
+        $this->where .= $condition->getSQL();
         return $this;
     }
 
@@ -33,6 +33,9 @@ trait Where
      * @return \Orange\Database\Queries\Query
      */
     public function addWhereBracket($open = true){
+        if (empty($this->where)){
+            $this->where .= ' WHERE ';
+        }
         $this->where .= $open ? ' (' : ') ';
         return $this;
     }

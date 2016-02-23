@@ -106,6 +106,12 @@ class MySQL implements Driver
             if (!$this->isConnected()) {
                 $this->connect();
             }
+            if (is_object($value)){
+                print_r($value);
+                debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+                die();
+                throw new DBException('Incorrect value for escaping. Something goes wrong.');
+            }
             return "'" . $this->mysqli->real_escape_string($value) . "'";
         }
     }

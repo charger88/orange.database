@@ -161,14 +161,15 @@ class Select extends Query
         if ($condition instanceof Parts\Condition) {
             $condition->setConnection($this->connection);
         }
-        if ($this->having){
-            if (substr($this->having,strlen($this->having) - 2) != '(') {
+
+        if (empty($this->having)){
+            $this->having .= ' HAVING ';
+        } else {
+            if (substr(trim($this->having),strlen(trim($this->having)) - 1) != '(') {
                 $this->having .= ($operator == Parts\Condition::L_AND ? ' AND ' : ' OR ');
             }
-        } else {
-            $this->where .= ' HAVING ';
         }
-        $this->having .= $condition;
+        $this->having .= $condition->getSQL();
         return $this;
     }
 
@@ -177,6 +178,9 @@ class Select extends Query
      * @return \Orange\Database\Queries\Query
      */
     public function addHavingBracket($open = true){
+        if (empty($this->having)){
+            $this->having .= ' HAVING ';
+        }
         $this->having .= $open ? ' (' : ') ';
         return $this;
     }
