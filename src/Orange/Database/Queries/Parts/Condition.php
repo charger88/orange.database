@@ -45,7 +45,10 @@ class Condition
 
     public function getSQL()
     {
-        return $this->formatField($this->field) . ' ' . $this->operator . ' ' . ($this->link ? $this->formatField($this->value) : $this->formatValue($this->value));
+        return $this->formatField($this->field) . ' ' . $this->operator . ' ' . (($this->value instanceof \Orange\Database\Queries\Select)
+            ? '(' . $this->value->build() . ')'
+            : ( $this->link ? $this->formatField($this->value) : $this->formatValue($this->value) )
+        );
     }
 
 }

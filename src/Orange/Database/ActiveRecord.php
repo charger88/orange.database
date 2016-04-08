@@ -7,6 +7,7 @@ use Orange\Database\Queries\Insert;
 use Orange\Database\Queries\Parts\Condition;
 use Orange\Database\Queries\Select;
 use Orange\Database\Queries\Table\Create;
+use Orange\Database\Queries\Table\Drop;
 use Orange\Database\Queries\Update;
 
 /**
@@ -146,8 +147,16 @@ abstract class ActiveRecord
         if (!array_key_exists($field, $this->values)) {
             throw new DBException('ActiveRecord exception: field "' . $field . '" is not exists in class ' . get_class($this) . ' (table - ' . static::$table . ')');
         }
+        $type = static::$scheme[$field]['type'];
+        if ($type == 'BOOLEAN') {
+            $value = intval($value) ? true : false;
+        } else if (($type == 'ID') || ($type == 'BIGINT') || ($type == 'INTEGER') || ($type == 'TINYINT') || ($type == 'SMALLINT')) {
+            $value = intval($value);
+        } else if (($type == 'TIME') || ($type == 'DATE')) {
+            $value = is_numeric($value) ? $value : strtotime($value);
+        }
         if ($field == 'id') {
-            $this->id = intval($value);
+            $this->id = $value;
         }
         $this->values[$field] = $value;
         return $this;
@@ -190,6 +199,19 @@ abstract class ActiveRecord
     }
 
     /**
+     * @param $field
+     * @return mixed
+     * @throws DBException
+     */
+    public function type($field)
+    {
+        if (!array_key_exists($field, static::$scheme)) {
+            throw new DBException('ActiveRecord exception: field "' . $field . '" is not exists in class ' . get_class($this) . ' (table - ' . static::$table . ')');
+        }
+        return static::$scheme[$field]['type'];
+    }
+
+    /**
      * @return array
      */
     public function getData()
@@ -222,6 +244,15 @@ abstract class ActiveRecord
             }
         }
         $create->execute();
+    }
+
+    /**
+     * @throws DBException
+     */
+    public static function uninstall()
+    {
+        $drop = new Drop(static::$table);
+        $drop->execute();
     }
 
     /**
@@ -267,10 +298,6 @@ abstract class ActiveRecord
             $value = explode('|', trim($value, '|'));
         } else if ($type == 'DATA') {
             $value = unserialize($value);
-        } else if ($type == 'BOOLEAN') {
-            $value = intval($value) ? true : false;
-        } else if (($type == 'BIGINT') || ($type == 'INTEGER') || ($type == 'TINYINT') || ($type == 'SMALLINT')) {
-            $value = intval($value);
         }
         return $value;
     }

@@ -107,7 +107,7 @@ class MySQL implements Driver
                 $this->connect();
             }
             if (is_object($value)) {
-                throw new DBException('Incorrect value for escaping. Something goes wrong.');
+                throw new DBException('Incorrect value for escaping. Something goes wrong. '.print_r($value,true));
             }
             return "'" . $this->mysqli->real_escape_string($value) . "'";
         }
