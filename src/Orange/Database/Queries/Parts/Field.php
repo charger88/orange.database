@@ -34,7 +34,7 @@ trait Field
                 }
                 if ($field) {
                     foreach ($field as $i => $f) {
-                        $field[$i] = $this->format($f, $is_field);
+                        $field[$i] = $f == '*' ? $f : $this->format($f, $is_field);
                     }
                 }
                 $field = $function . '(' . implode(',', $field) . ')';
