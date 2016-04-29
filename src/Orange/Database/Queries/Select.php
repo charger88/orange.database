@@ -115,7 +115,7 @@ class Select extends Query
         if ($condition) {
             $condition->setConnection($this->getConnection());
         }
-        if ($sql = trim($modeSQL . ' ' . $table . ($condition ? ' ON ' . $condition : ''))) {
+        if ($sql = trim($modeSQL . ' ' . $table . ($condition ? ' ON ' . $condition->getSQL() : ''))) {
             $this->table .= ' ' . $sql;
         }
         return $this;

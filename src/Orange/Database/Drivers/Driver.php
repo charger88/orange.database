@@ -37,4 +37,6 @@ interface Driver
 
     public function getSelectedRows($result);
 
+    public function setTimezone($timezone);
+
 }

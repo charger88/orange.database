@@ -241,4 +241,12 @@ class MySQL implements Driver
         $this->closeConnection();
     }
 
+    public function setTimezone($timezone)
+    {
+        $time = new \DateTime('now', new \DateTimeZone($timezone));
+        $timezoneOffset = $time->format('P');
+        $this->mysqli->query('SET time_zone = '.$this->escape($timezone).';');
+        $this->mysqli->query('SET time_zone = '.$this->escape($timezoneOffset).';');
+    }
+
 }
