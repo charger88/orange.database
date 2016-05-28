@@ -31,8 +31,8 @@ abstract class Query
      */
     public function __construct($table, $connection_name = 'master')
     {
-        $this->table = $table;
         $this->connection = \Orange\Database\Connection::get($connection_name);
+        $this->table = $this->connection->driver->getTablesPrefix() . $table;
     }
 
     /**

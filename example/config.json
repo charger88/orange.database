@@ -5,6 +5,7 @@
   "port": "3306",
   "user": "root",
   "password": "",
+  "prefix": "",
   "charset": "utf8",
   "collation": "utf8_general_ci"
 }

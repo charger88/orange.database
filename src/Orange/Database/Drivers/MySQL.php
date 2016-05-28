@@ -249,4 +249,9 @@ class MySQL implements Driver
         $this->mysqli->query('SET time_zone = '.$this->escape($timezoneOffset).';');
     }
 
+    public function getTablesPrefix()
+    {
+        return isset($this->config['prefix']) ? $this->config['prefix'] : '';
+    }
+
 }

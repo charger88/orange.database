@@ -39,4 +39,6 @@ interface Driver
 
     public function setTimezone($timezone);
 
+    public function getTablesPrefix();
+
 }
