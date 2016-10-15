@@ -240,7 +240,7 @@ class Select extends Query
 
     /**
      * @param null $key
-     * @param null $classname
+     * @param null|string|array $classname
      * @param bool|false $indexed
      * @return array
      * @throws DBException
@@ -249,13 +249,22 @@ class Select extends Query
     {
         $result = [];
         while ($row = $this->getResultNextRow($indexed)) {
+            if (is_null($classname)) {
+                $res = $row;
+            } else if (is_array($classname)) {
+                if (!is_numeric(key($classname))) {
+                    $res = current($classname);
+                }
+            } else {
+                $res = new $classname($row);
+            }
             if (!is_null($key)) {
                 if (!array_key_exists($key, $row)) {
                     throw new \Orange\Database\DBException('Key field is not exists');
                 }
-                $result[$row[$key]] = is_null($classname) ? $row : new $classname($row);
+                $result[$row[$key]] = $res;
             } else {
-                $result[] = is_null($classname) ? $row : new $classname($row);
+                $result[] = $res;
             }
         }
         return $result;
