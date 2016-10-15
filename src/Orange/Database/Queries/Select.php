@@ -253,7 +253,7 @@ class Select extends Query
                 $res = $row;
             } else if (is_array($classname)) {
                 if (!is_numeric(key($classname))) {
-                    $res = current($classname);
+                    $res = $row[current($classname)];
                 }
             } else {
                 $res = new $classname($row);
