@@ -227,7 +227,7 @@ class MySQL implements Driver
 
     public function getLastID()
     {
-        return $this->mysqli->insert_id;
+        return intval($this->mysqli->insert_id);
     }
 
     public function getAffectedRows()

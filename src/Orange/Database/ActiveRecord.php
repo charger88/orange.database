@@ -60,7 +60,9 @@ abstract class ActiveRecord
         foreach (static::$scheme as $field => $params) {
             $this->values[$field] = isset($params['default']) ? $params['default'] : $this->getDefaultAppValue($field);
         }
-        if (is_null($key) && is_array($value)) {
+        if (($key === false) && is_null($value)) {
+            // Do nothing
+        } else if (is_null($key) && is_array($value)) {
             $this->setData($value);
         } else if (is_array($key) && is_null($value)) {
             $this->setData($key,true);

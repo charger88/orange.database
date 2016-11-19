@@ -223,7 +223,7 @@ class PostgreSQL implements Driver
         if (!($res = pg_query($sql))) {
             throw new DBException('Next ID retrieving was failed for table "' . $this->last_insert_table . '"');
         }
-        return pg_fetch_row($res)[0];
+        return intval(pg_fetch_row($res)[0]);
     }
 
     public function getAffectedRows()
