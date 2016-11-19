@@ -65,20 +65,24 @@ abstract class ActiveRecord
         } else if (is_array($key) && is_null($value)) {
             $this->setData($key,true);
         } else if (is_int($key) && is_null($value)) {
-            $this->setData((new Select(static::$table))
+            $row = (new Select(static::$table))
                 ->addWhere(new Condition('id', '=', $key))
                 ->execute()
-                ->getResultNextRow()
-                , true);
+                ->getResultNextRow();
+            if ($row) {
+                $this->setData($row, true);
+            }
         } else if (is_string($key) && is_string($value)) {
             if (!in_array($key, static::$u_keys)) {
                 throw new DBException($key . ' is not unique key of class ' . get_class($this));
             }
-            $this->setData((new Select(static::$table))
+            $row = (new Select(static::$table))
                 ->addWhere(new Condition($key, '=', $value))
                 ->execute()
-                ->getResultNextRow()
-                , true);
+                ->getResultNextRow();
+            if ($row) {
+                $this->setData($row, true);
+            }
         } else if (is_array($key) && is_array($value)) {
             if (!in_array($key, static::$u_keys)) {
                 throw new DBException('[' . implode(' ,', $key) . '] is not unique key of class ' . get_class($this));
@@ -172,6 +176,7 @@ abstract class ActiveRecord
     {
         if (!is_null($data)) {
             if (!is_array($data)) {
+                debug_print_backtrace();
                 throw new DBException('Parameter $data of method setData should be array.');
             }
             if ($data) {

@@ -1,0 +1,10 @@
+{
+  "driver": "PostgreSQL",
+  "server": "localhost",
+  "database": "orange",
+  "port": "5432",
+  "user": "postgres",
+  "password": "qwerty",
+  "prefix": "",
+  "charset": "utf8"
+}

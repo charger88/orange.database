@@ -21,7 +21,7 @@ interface Driver
 
     public function checkField($value);
 
-    public function escape($value);
+    public function escape($value, $field);
 
     public function fetchRow($result);
 

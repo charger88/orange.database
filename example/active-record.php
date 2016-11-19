@@ -7,7 +7,7 @@ require_once __DIR__ . '/classes.php';
 
 use \Orange\Database\Connection;
 
-$config = json_decode(file_get_contents(__DIR__ . '/config.json'), true);
+$config = json_decode(file_get_contents(__DIR__ . '/config-my.json'), true);
 
 try {
 
@@ -32,7 +32,7 @@ try {
         ->set('title', 'My article number one')
         ->set('content', 'Text of my first article')
         ->set('user_id', $user->id)
-        ->save();;
+        ->save();
 
 } catch (\Orange\Database\DBException $e) {
     echo 'Orange database exception: ' . $e->getMessage() . (($query = $e->getQuery()) ? ". Query:\n" . $query . "\n" . $e->getTraceAsString() . "\n" : '');

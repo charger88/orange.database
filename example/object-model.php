@@ -15,7 +15,7 @@ use \Orange\Database\Queries\Table\Drop;
 use \Orange\Database\Queries\Table\Truncate;
 use \Orange\Database\Queries\Parts\Condition;
 
-$config = json_decode(file_get_contents(__DIR__ . '/config.json'), true);
+$config = json_decode(file_get_contents(__DIR__ . '/config-my.json'), true);
 
 try {
 

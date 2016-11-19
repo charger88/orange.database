@@ -31,7 +31,7 @@ class Article extends \Orange\Database\ActiveRecord
 class User extends \Orange\Database\ActiveRecord
 {
 
-    protected static $table = 'user';
+    protected static $table = 'users';
 
     protected static $scheme = [
         'id' => ['type' => 'ID'],

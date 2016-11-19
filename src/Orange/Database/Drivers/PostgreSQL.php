@@ -4,15 +4,13 @@ namespace Orange\Database\Drivers;
 
 use Orange\Database\DBException;
 
-class MySQL implements Driver
+class PostgreSQL implements Driver
 {
 
-    /**
-     * @var \mysqli
-     */
-    protected $mysqli;
+    protected $connection;
     protected $config;
     protected $result;
+    protected $last_insert_table;
 
     protected $connected = false;
 
@@ -41,14 +39,13 @@ class MySQL implements Driver
 
     public function connect()
     {
-        $this->mysqli = @new \mysqli($this->config['server'], $this->config['user'], $this->config['password'], $this->config['database'], $this->config['port']);
-        if ($this->mysqli->connect_error) {
-            throw new DBException('SQL connection error (' . $this->mysqli->connect_errno . '): ' . $this->mysqli->connect_error);
-        }
+        $connection_string = 'host=' . $this->config['server'] . ' port=' . $this->config['port'] . ' dbname=' . $this->config['database'] . ' user=' . $this->config['user'] . ' password=' . $this->config['password'];
         if ($this->config['charset']) {
-            if (!$this->mysqli->set_charset($this->config['charset'])) {
-                throw new DBException('SQL charset error (' . $this->mysqli->errno . '): ' . $this->mysqli->error);
-            }
+            $connection_string .= " options='--client_encoding=" . $this->config['charset'] . "'";
+        }
+        $this->connection = pg_connect($connection_string);
+        if (!$this->connection) {
+            throw new DBException('SQL connection error');
         }
         $this->connected = true;
     }
@@ -62,7 +59,7 @@ class MySQL implements Driver
     {
         if ($this->isConnected()) {
             $this->connected = false;
-            $this->mysqli->close();
+            pg_close($this->connection);
         }
     }
 
@@ -71,11 +68,14 @@ class MySQL implements Driver
         if (!$this->isConnected()) {
             $this->connect();
         }
-        $result = $this->mysqli->query($sql);
-        if ($result === false) {
-            throw new DBException('SQL query error (' . $this->mysqli->errno . '): ' . $this->mysqli->error, $sql);
+        $this->result = pg_query($sql);
+        if (strpos($sql, 'INSERT INTO ') === 0) {
+            $this->last_insert_table = explode(' ', $sql)[2];
         }
-        return $result;
+        if ($this->result === false) {
+            throw new DBException('SQL query error: ' . pg_last_error(), $sql);
+        }
+        return $this->result;
     }
 
     public function checkTable($table)
@@ -101,7 +101,7 @@ class MySQL implements Driver
     public function escape($value, $field = '')
     {
         if (is_null($value)) {
-            return 'NULL';
+            return $field === 'id' ? 'DEFAULT' : 'NULL';
         } else if ($value === true) {
             return 'TRUE';
         } else if ($value === false) {
@@ -111,9 +111,9 @@ class MySQL implements Driver
                 $this->connect();
             }
             if (is_object($value)) {
-                throw new DBException('Incorrect value for escaping. Something goes wrong. '.print_r($value,true));
+                throw new DBException('Incorrect value for escaping. Something goes wrong. ' . print_r($value, true));
             }
-            return "'" . $this->mysqli->real_escape_string($value) . "'";
+            return "'" . pg_escape_string($value) . "'";
         }
     }
 
@@ -123,7 +123,7 @@ class MySQL implements Driver
      */
     public function fetchRow($result)
     {
-        return $result->fetch_row();
+        return pg_fetch_row($result);
     }
 
     /**
@@ -132,26 +132,20 @@ class MySQL implements Driver
      */
     public function fetchAssoc($result)
     {
-        return $result->fetch_assoc();
+        return pg_fetch_assoc($result);
     }
 
     public function createTableSQLStatement($table, $fields, $u_keys, $keys, $options, $if_not_exists_only)
     {
-        $sql = 'CREATE TABLE ' . ($if_not_exists_only ? 'IF NOT EXISTS ' : '') . $table . ' (' . "\n\t" . implode(",\n\t", $fields);
+        $sql = [];
+        $sql[] = 'CREATE TABLE ' . ($if_not_exists_only ? 'IF NOT EXISTS ' : '') . $table . ' (' . "\n\t" . implode(",\n\t", $fields) . ');';
         if ($u_keys || $keys) {
             foreach ($u_keys as $i => $uk) {
-                $sql .= "\n\t" . ', UNIQUE KEY ' . (is_array($uk) ? implode('_', $uk) : $uk) . ' (' . (is_array($uk) ? implode(', ', $uk) : $uk) . ')';
+                $sql[] = 'CREATE UNIQUE INDEX IF NOT EXISTS ' . (is_array($uk) ? implode('_', $uk) : $uk) . ' ON ' . $table . ' (' . (is_array($uk) ? implode(', ', $uk) : $uk) . ')';
             }
             foreach ($keys as $i => $uk) {
-                $sql .= "\n\t" . ', KEY ' . (is_array($uk) ? implode('_', $uk) : $uk) . ' (' . (is_array($uk) ? implode(', ', $uk) : $uk) . ')';
+                $sql[] = 'CREATE INDEX IF NOT EXISTS ' . (is_array($uk) ? implode('_', $uk) : $uk) . ' ON ' . $table . ' (' . (is_array($uk) ? implode(', ', $uk) : $uk) . ')';
             }
-        }
-        $sql .= "\n" . ')';
-        if (isset($options['engine'])) {
-            $sql .= ' ENGINE=' . $options['engine'];
-        }
-        if (isset($this->config['charset'])) {
-            $sql .= ' CHARSET=' . $this->config['charset'];
         }
         return $sql;
     }
@@ -180,13 +174,13 @@ class MySQL implements Driver
         } else if ($type == 'BIGINT') {
             $type = 'BIGINT';
         } else if ($type == 'INTEGER') {
-            $type = 'INT';
+            $type = 'INTEGER';
         } else if ($type == 'SMALLINT') {
             $type = 'SMALLINT';
         } else if ($type == 'TINYINT') {
-            $type = 'TINYINT';
+            $type = 'SMALLINT';
         } else if ($type == 'BOOLEAN') {
-            $type = 'TINYINT';
+            $type = 'BOOLEAN';
         } else if ($type == 'FLOAT') {
             $type = 'FLOAT';
         } else if ($type == 'ID') {
@@ -195,12 +189,12 @@ class MySQL implements Driver
             }
             $ignore_null = true;
             $ignore_default = true;
-            $type = 'BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY';
+            $type = 'BIGSERIAL PRIMARY KEY';
         } else {
             if (is_null($length)) {
                 $type = 'TEXT';
             } else if ($length > 65535) {
-                $type = 'LONGTEXT';
+                $type = 'TEXT';
             } else if ($length > 8192) {
                 $type = 'TEXT';
             } else {
@@ -209,17 +203,15 @@ class MySQL implements Driver
             $ignore_charset = false;
         }
         if (!$ignore_charset) {
-            if (isset($this->config['charset'])) {
-                $type .= ' CHARACTER SET ' . $this->config['charset'];
-            }
-            if (isset($this->config['collation'])) {
-                $type .= ' COLLATE ' . $this->config['collation'];
-            }
+            // Do nothing
         }
         if (!$ignore_null && !$null) {
             $type .= ' NOT NULL';
         }
         if (!$ignore_default && !is_null($default) && ($default !== 'NULL')) {
+            if ((strpos($type, 'TIMESTAMP') === 0) && ($default === '\'0000-00-00 00:00:00\'')) {
+                $default = '\'0001-01-01 00:00:00\'';
+            }
             $type .= ' DEFAULT ' . $default;
         }
         return $field . ' ' . $type;
@@ -227,17 +219,21 @@ class MySQL implements Driver
 
     public function getLastID()
     {
-        return $this->mysqli->insert_id;
+        $sql = 'SELECT MAX(id) FROM ' . $this->last_insert_table . ';';
+        if (!($res = pg_query($sql))) {
+            throw new DBException('Next ID retrieving was failed for table "' . $this->last_insert_table . '"');
+        }
+        return pg_fetch_row($res)[0];
     }
 
     public function getAffectedRows()
     {
-        return $this->mysqli->affected_rows;
+        return pg_affected_rows($this->result);
     }
 
     public function getSelectedRows($result)
     {
-        return $result->num_rows;;
+        return pg_num_rows($result);
     }
 
     public function __destruct()
@@ -247,10 +243,7 @@ class MySQL implements Driver
 
     public function setTimezone($timezone)
     {
-        $time = new \DateTime('now', new \DateTimeZone($timezone));
-        $timezoneOffset = $time->format('P');
-        $this->mysqli->query('SET time_zone = '.$this->escape($timezone).';');
-        $this->mysqli->query('SET time_zone = '.$this->escape($timezoneOffset).';');
+        pg_query('set timezone=\'' . $this->escape($timezone) . '\';');
     }
 
     public function getTablesPrefix()

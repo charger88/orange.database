@@ -83,7 +83,7 @@ class Insert extends Query
         if ($this->values) {
             $this->values .= ', ';
         }
-        $this->values .= $this->connection->driver->escape($value);
+        $this->values .= $this->connection->driver->escape($value, $field);
         return $this;
     }
 
