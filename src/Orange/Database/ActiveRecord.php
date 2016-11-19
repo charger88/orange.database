@@ -155,7 +155,7 @@ abstract class ActiveRecord
         }
         $type = static::$scheme[$field]['type'];
         if ($type == 'BOOLEAN') {
-            $value = intval($value) ? true : false;
+            $value = intval($value) && $value || ($value === true) || ($value === 't') ? true : false;
         } else if (($type == 'ID') || ($type == 'BIGINT') || ($type == 'INTEGER') || ($type == 'TINYINT') || ($type == 'SMALLINT')) {
             $value = intval($value);
         } else if (($type == 'TIME') || ($type == 'DATE')) {
@@ -282,7 +282,7 @@ abstract class ActiveRecord
         } else if ($type == 'DATA') {
             $value = serialize($value);
         } else if ($type == 'BOOLEAN') {
-            $value = intval($value) || ($value === true) || ($value === 't') ? 1 : 0;
+            $value = $value ? 1 : 0;
         } else if ($type == 'TIME') {
             $value = date("Y-m-d H:i:s", is_numeric($value) ? $value : strtotime($value));
         } else if ($type == 'DATE') {
